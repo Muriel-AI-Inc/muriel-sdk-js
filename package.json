@@ -1,0 +1,48 @@
+{
+  "name": "muriel",
+  "version": "0.1.0",
+  "description": "Official JavaScript/TypeScript SDK for the Muriel® Water Quality API",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs,esm --dts --clean",
+    "dev": "tsup src/index.ts --format cjs,esm --dts --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "node --experimental-vm-modules node_modules/.bin/jest",
+    "lint": "eslint src --ext .ts"
+  },
+  "keywords": [
+    "water",
+    "quality",
+    "pfas",
+    "lead",
+    "environmental",
+    "api",
+    "sdk"
+  ],
+  "author": "Muriel LLC <support@muriel.io>",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.41",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/murielllc/muriel-sdk-js"
+  }
+}
