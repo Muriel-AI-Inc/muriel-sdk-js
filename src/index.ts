@@ -1,6 +1,6 @@
 export { MurielClient } from './client.js'
-export { Agent } from './agent.js'
-export type { AgentOptions } from './agent.js'
+export { Agent, query } from './agent.js'
+export type { AgentOptions, QueryOptions, QueryCallOptions } from './agent.js'
 
 export { getResults } from './endpoints/results.js'
 export { getViolations } from './endpoints/violations.js'
