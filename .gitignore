@@ -17,3 +17,7 @@ Thumbs.db
 .vscode/
 .idea/
 *.swp
+
+# Local tool settings and reports: never published
+.claude/
+*.tgz

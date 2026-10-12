@@ -1,48 +1,68 @@
 {
   "name": "muriel",
-  "version": "0.1.0",
-  "description": "Official JavaScript/TypeScript SDK for the Muriel® Water Quality API",
+  "version": "0.2.0",
+  "description": "Muriel: the AI agent for U.S. drinking water data. Ask about any public water system in plain English, or query the sample results directly.",
+  "keywords": [
+    "drinking water",
+    "water quality",
+    "compliance",
+    "pfas",
+    "lead",
+    "epa",
+    "sdwa",
+    "ai agent",
+    "api",
+    "sdk"
+  ],
+  "homepage": "https://docs.murielai.io",
+  "bugs": {
+    "url": "https://github.com/Muriel-AI-Inc/muriel-sdk-js/issues",
+    "email": "info@murielai.io"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Muriel-AI-Inc/muriel-sdk-js.git"
+  },
+  "license": "MIT",
+  "author": "Muriel AI, Inc. <info@murielai.io> (https://murielai.io)",
+  "type": "commonjs",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.js"
-    }
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
+    },
+    "./package.json": "./package.json"
   },
   "files": [
-    "dist"
+    "dist",
+    "README.md",
+    "LICENSE"
   ],
-  "scripts": {
-    "build": "tsup src/index.ts --format cjs,esm --dts --clean",
-    "dev": "tsup src/index.ts --format cjs,esm --dts --watch",
-    "typecheck": "tsc --noEmit",
-    "test": "node --experimental-vm-modules node_modules/.bin/jest",
-    "lint": "eslint src --ext .ts"
-  },
-  "keywords": [
-    "water",
-    "quality",
-    "pfas",
-    "lead",
-    "environmental",
-    "api",
-    "sdk"
-  ],
-  "author": "Muriel LLC <support@muriel.io>",
-  "license": "UNLICENSED",
+  "sideEffects": false,
   "engines": {
     "node": ">=18.0.0"
+  },
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs,esm --dts --clean --target node18",
+    "typecheck": "tsc --noEmit",
+    "test": "npm run build && node --test test/*.test.mjs",
+    "prepublishOnly": "npm run typecheck && npm test"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "devDependencies": {
     "@types/node": "^20.19.41",
     "tsup": "^8.5.1",
     "typescript": "^5.9.3"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/murielllc/muriel-sdk-js"
   }
 }

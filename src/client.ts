@@ -1,7 +1,7 @@
 import {
-  DEFAULT_BASE_URL,
   DEFAULT_TIMEOUT_MS,
-  getApiKey, getBaseUrl } from './config.js'
+  checkedBaseUrl, getApiKey, getBaseUrl } from './config.js'
+import { VERSION } from './version.js'
 import {
   MurielAPIError,
   MurielAuthenticationError,
@@ -30,7 +30,7 @@ export class MurielClient {
         'API key required. Pass apiKey or set MURIEL_API_KEY env var.'
       )
     }
-    this.baseUrl = (options.baseUrl ?? getBaseUrl()).replace(/\/$/, '')
+    this.baseUrl = checkedBaseUrl(options.baseUrl ?? getBaseUrl())
     this.timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS
   }
 
@@ -60,10 +60,14 @@ export class MurielClient {
         headers: {
           'X-API-Key': this.apiKey,
           'Content-Type': 'application/json',
-          'User-Agent': 'muriel-js/0.1.0',
+          'User-Agent': `muriel-js/${VERSION}`,
         },
         body: body !== undefined ? JSON.stringify(body) : undefined,
         signal: controller.signal,
+        // Never follow a redirect: fetch drops Authorization on a cross-origin
+        // redirect but forwards a custom X-API-Key header, so following one
+        // would hand the key to whatever host it names.
+        redirect: 'manual',
       })
     } catch (err: unknown) {
       if (err instanceof Error && err.name === 'AbortError') {
@@ -72,6 +76,13 @@ export class MurielClient {
       throw new MurielAPIError(`Network error: ${String(err)}`)
     } finally {
       clearTimeout(timer)
+    }
+
+    if ((res.status >= 300 && res.status < 400) || res.type === 'opaqueredirect') {
+      throw new MurielAPIError(
+        `Unexpected redirect (${res.status || 'opaque'}) to ${res.headers.get('location') ?? '?'}; ` +
+        'not followed, so your API key was not sent there. Check MURIEL_BASE_URL.',
+        res.status || undefined)
     }
 
     let data: unknown
@@ -89,19 +100,22 @@ export class MurielClient {
     const raw = typeof data === 'object' && data !== null && 'detail' in data
       ? (data as Record<string, unknown>).detail : undefined
     const detail = typeof raw === 'string' ? raw
-      : raw && typeof raw === 'object' && 'message' in raw
-        ? String((raw as Record<string, unknown>).message)
-        : `HTTP ${res.status}`
+      : Array.isArray(raw)   // a 422: FastAPI's list of field errors
+        ? raw.map((e) => (e && typeof e === 'object' && 'msg' in e) ? String((e as Record<string, unknown>).msg) : String(e)).join('; ')
+        : raw && typeof raw === 'object' && 'message' in raw
+          ? String((raw as Record<string, unknown>).message)
+          : ''
+    const msg = detail || `HTTP ${res.status}`
 
     switch (res.status) {
-      case 401: throw new MurielAuthenticationError(detail, res.status, data)
-      case 400: throw new MurielValidationError(detail, res.status, data)
-      case 402: throw new MurielCreditsError(detail, res.status, data)
-      case 404: throw new MurielNotFoundError(detail, res.status, data)
-      case 429: throw new MurielRateLimitError(detail, res.status, data)
+      case 401: throw new MurielAuthenticationError(msg, res.status, data)
+      case 400: case 422: throw new MurielValidationError(msg, res.status, data)
+      case 402: throw new MurielCreditsError(detail || undefined, res.status, data)
+      case 404: throw new MurielNotFoundError(msg, res.status, data)
+      case 429: throw new MurielRateLimitError(msg, res.status, data)
     }
-    if (res.status >= 500) throw new MurielServerError(detail, res.status, data)
-    throw new MurielAPIError(detail, res.status, data)
+    if (res.status >= 500) throw new MurielServerError(msg, res.status, data)
+    throw new MurielAPIError(msg, res.status, data)
   }
 
   get<T = unknown>(endpoint: string, params?: QueryParams): Promise<T> {

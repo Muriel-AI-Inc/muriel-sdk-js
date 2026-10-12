@@ -1,15 +1,29 @@
 export { MurielClient } from './client.js'
+export type { ClientOptions } from './client.js'
 export { Agent, query } from './agent.js'
 export type { AgentOptions, QueryOptions, QueryCallOptions } from './agent.js'
 
 export { getResults } from './endpoints/results.js'
-export { getViolations } from './endpoints/violations.js'
+export {
+  getLatest, getLead, getPfas, getColiform, getNitrate,
+  getDbps, getArsenic, getManganese, getVocs,
+} from './endpoints/contaminants.js'
 export { getSystems } from './endpoints/systems.js'
+export {
+  getStateFacilities, getStateSamplingPoints,
+  getFacilityGeocoding, getSamplingPointGeocoding,
+} from './endpoints/locations.js'
+export { getViolations } from './endpoints/violations.js'
 export { getRequirements } from './endpoints/requirements.js'
 
 export type { GetResultsOptions } from './endpoints/results.js'
-export type { GetViolationsOptions } from './endpoints/violations.js'
+export type { FeedOptions } from './endpoints/contaminants.js'
 export type { GetSystemsOptions } from './endpoints/systems.js'
+export type {
+  Geocoding, Facility, SamplingPoint, StateListOptions,
+  FacilityOptions, SamplingPointOptions,
+} from './endpoints/locations.js'
+export type { GetViolationsOptions } from './endpoints/violations.js'
 export type { GetRequirementsOptions } from './endpoints/requirements.js'
 
 export type {
@@ -33,4 +47,4 @@ export {
 export { ANALYTE_GROUPS } from './config.js'
 export type { AnalyteGroup } from './config.js'
 
-export const VERSION = '0.1.0'
+export { VERSION } from './version.js'

@@ -1,3 +1,4 @@
+import { MurielValidationError } from '../errors.js'
 import { MurielClient, type ClientOptions, type QueryParams } from '../client.js'
 import type { Violation, ViolationsResponse } from '../models.js'
 
@@ -25,7 +26,7 @@ export async function getViolations(options: GetViolationsOptions): Promise<Viol
     limit = 100, apiKey, baseUrl, timeoutMs,
   } = options
 
-  if (!pwsid && !state) throw new Error('Must provide either pwsid or state')
+  if (!pwsid && !state) throw new MurielValidationError('Give either pwsid or state.')
 
   const client = new MurielClient({ apiKey, baseUrl, timeoutMs })
 
@@ -37,7 +38,7 @@ export async function getViolations(options: GetViolationsOptions): Promise<Viol
   }
 
   const endpoint = pwsid
-    ? `/api/v1/violations/system/${pwsid}`
+    ? `/api/v1/violations/system/${encodeURIComponent(pwsid)}`
     : `/api/v1/violations/state/${state!.toUpperCase()}`
 
   const data = await client.get(endpoint, params)

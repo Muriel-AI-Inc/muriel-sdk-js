@@ -1,0 +1,54 @@
+# Publish to npm when a GitHub release is published (tag like v0.2.0).
+#
+# Uses npm Trusted Publishing: no npm token is stored anywhere, and the package
+# gets a provenance statement linking it to this workflow run. One-time setup
+# on npmjs.com -> the `muriel` package -> Settings -> Trusted Publisher ->
+# GitHub Actions: organization Muriel-AI-Inc, repository muriel-sdk-js,
+# workflow publish.yml, environment npm. npm only offers this once the
+# package exists, so the very first version is published by hand with
+# `npm publish` (prepublishOnly runs the typecheck and tests first).
+name: publish
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [18, 20, 22]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+
+  publish:
+    needs: test
+    runs-on: ubuntu-latest
+    environment: npm
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+      - name: Version matches the tag
+        if: github.event_name == 'release'
+        run: |
+          v=$(node -p "require('./package.json').version")
+          test "v$v" = "${GITHUB_REF_NAME}" || { echo "package.json version $v != tag ${GITHUB_REF_NAME}"; exit 1; }
+      - run: npm ci
+      - run: npm publish

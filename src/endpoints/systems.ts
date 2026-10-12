@@ -2,9 +2,9 @@ import { MurielClient, type ClientOptions, type QueryParams } from '../client.js
 import type { WaterSystem, SystemsResponse } from '../models.js'
 
 export interface GetSystemsOptions extends ClientOptions {
+  /** Two-letter state code. */
   state: string
-  systemType?: 'CWS' | 'NTNCWS' | 'TNCWS'
-  status?: 'A' | 'I'
+  /** How many systems to return (default 1,000, max 20,000). */
   limit?: number
 }
 
@@ -18,16 +18,12 @@ function extractSystems(data: unknown): WaterSystem[] {
 }
 
 export async function getSystems(options: GetSystemsOptions): Promise<WaterSystem[]> {
-  const { state, systemType, status, limit = 100, apiKey, baseUrl, timeoutMs } = options
+  const { state, limit = 1000, apiKey, baseUrl, timeoutMs } = options
 
   const client = new MurielClient({ apiKey, baseUrl, timeoutMs })
 
-  const params: QueryParams = {
-    limit,
-    ...(systemType && { system_princ: systemType }),
-    ...(status && { system_statu: status }),
-  }
+  const params: QueryParams = { limit }
 
-  const data = await client.get(`/api/v1/systems/${state.toUpperCase()}`, params)
+  const data = await client.get(`/api/v1/systems/${encodeURIComponent(state.trim().toUpperCase())}`, params)
   return extractSystems(data)
 }

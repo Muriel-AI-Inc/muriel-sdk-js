@@ -1,6 +1,7 @@
 import { MurielClient, type ClientOptions, type QueryParams } from '../client.js'
 import type { WaterQualityRecord, RecordsResponse } from '../models.js'
-import type { AnalyteGroup } from '../config.js'
+import { ANALYTE_GROUPS, type AnalyteGroup } from '../config.js'
+import { MurielValidationError } from '../errors.js'
 
 export interface GetResultsOptions extends ClientOptions {
   /** Public Water System ID */
@@ -27,7 +28,7 @@ export interface GetResultsOptions extends ClientOptions {
   geocodedOnly?: boolean
   /** Microbial: 'P' = present, 'A' = absent */
   presenceIndicator?: 'P' | 'A'
-  /** Number of records (default 100, max 100 per page) */
+  /** Number of records (default 100, max 1,000 per call) */
   limit?: number
   /** Pagination offset */
   offset?: number
@@ -52,6 +53,12 @@ export async function getResults(options: GetResultsOptions): Promise<WaterQuali
     apiKey, baseUrl, timeoutMs,
   } = options
 
+  if (analyteGroup && !(ANALYTE_GROUPS as readonly string[]).includes(analyteGroup)) {
+    throw new MurielValidationError(`analyteGroup must be one of: ${ANALYTE_GROUPS.join(', ')}.`)
+  }
+  if (era !== undefined && era !== 'all' && era !== 'recent') {
+    throw new MurielValidationError("era must be 'all' or 'recent'.")
+  }
   const client = new MurielClient({ apiKey, baseUrl, timeoutMs })
 
   const params: QueryParams = {
@@ -76,15 +83,15 @@ export async function getResults(options: GetResultsOptions): Promise<WaterQuali
   } else if (analyteGroup && !pwsid && !state) {
     endpoint = `/api/v1/records/group/${analyteGroup}`
   } else if (state && !pwsid) {
-    endpoint = `/api/v1/records/state/${state.toUpperCase()}`
+    endpoint = `/api/v1/records/state/${encodeURIComponent(state.trim().toUpperCase())}`
     if (analyteGroup) params['analyte_group'] = analyteGroup
   } else if (pwsid) {
-    endpoint = `/api/v1/records/system/${pwsid}`
+    endpoint = `/api/v1/records/system/${encodeURIComponent(pwsid.trim().toUpperCase())}`
     if (analyteGroup) params['analyte_group'] = analyteGroup
   } else if (analyteGroup) {
     endpoint = `/api/v1/records/group/${analyteGroup}`
   } else {
-    throw new Error('Must provide at least one of: pwsid, address, state, or analyteGroup')
+    throw new MurielValidationError('Give at least one of: pwsid, address, state, or analyteGroup.')
   }
 
   const data = await client.get(endpoint, params)

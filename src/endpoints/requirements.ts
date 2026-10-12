@@ -1,3 +1,4 @@
+import { MurielValidationError } from '../errors.js'
 import { MurielClient, type ClientOptions, type QueryParams } from '../client.js'
 import type { SamplingRequirement, RequirementsResponse } from '../models.js'
 
@@ -19,14 +20,14 @@ function extractRequirements(data: unknown): SamplingRequirement[] {
 export async function getRequirements(options: GetRequirementsOptions): Promise<SamplingRequirement[]> {
   const { pwsid, state, limit = 100, apiKey, baseUrl, timeoutMs } = options
 
-  if (!pwsid && !state) throw new Error('Must provide either pwsid or state')
+  if (!pwsid && !state) throw new MurielValidationError('Give either pwsid or state.')
 
   const client = new MurielClient({ apiKey, baseUrl, timeoutMs })
 
   const params: QueryParams = { limit }
 
   const endpoint = pwsid
-    ? `/api/v1/requirements/system/${pwsid}`
+    ? `/api/v1/requirements/system/${encodeURIComponent(pwsid)}`
     : `/api/v1/requirements/state/${state!.toUpperCase()}`
 
   const data = await client.get(endpoint, params)

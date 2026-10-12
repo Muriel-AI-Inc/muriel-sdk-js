@@ -20,7 +20,12 @@ export interface WaterQualityRecord {
   result_latitude?: number
   result_longitude?: number
   result_address?: string
+  /** 'recent' (the window states currently publish) or 'historical'. */
+  era?: string
+  /** Address searches: miles from the address (0 for the system serving it). */
   distance_miles?: number
+  /** Address searches: 'sample' (its own coordinates) or 'service_area'. */
+  location_basis?: 'sample' | 'service_area'
   [key: string]: unknown
 }
 
@@ -40,13 +45,19 @@ export interface Violation {
   [key: string]: unknown
 }
 
+/** A water system with results on file, from getSystems(). */
 export interface WaterSystem {
   pwsid: string
-  system_name: string
-  state: string
-  system_type?: string
-  population_served?: number
-  activity_status?: string
+  pws_name: string
+  state_code: string
+  population_served_count?: number | null
+  service_connections_count?: number | null
+  /** EPA size category. */
+  size_band?: string | null
+  /** How many sample results Muriel holds for the system. */
+  results_held: number
+  /** Date of the newest result, 'YYYY-MM-DD'. */
+  latest_sample?: string | null
   [key: string]: unknown
 }
 
@@ -61,7 +72,11 @@ export interface SamplingRequirement {
 }
 
 export interface AgentQueryResponse {
-  results: WaterQualityRecord[]
+  /**
+   * The records the answer rests on. Sample results use the WaterQualityRecord
+   * fields; other rows (events, rankings, systems) carry their own.
+   */
+  results: Array<WaterQualityRecord | Record<string, unknown>>
   count: number
   summary: string
   /** Each tool the agent ran, with its input. */
