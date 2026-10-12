@@ -1,16 +1,14 @@
 import {
   DEFAULT_BASE_URL,
   DEFAULT_TIMEOUT_MS,
-  getApiKey,
-} from './config.js'
+  getApiKey, getBaseUrl } from './config.js'
 import {
   MurielAPIError,
   MurielAuthenticationError,
   MurielValidationError,
   MurielNotFoundError,
   MurielRateLimitError,
-  MurielServerError,
-} from './errors.js'
+  MurielServerError, MurielCreditsError } from './errors.js'
 
 export interface ClientOptions {
   apiKey?: string
@@ -32,7 +30,7 @@ export class MurielClient {
         'API key required. Pass apiKey or set MURIEL_API_KEY env var.'
       )
     }
-    this.baseUrl = (options.baseUrl ?? DEFAULT_BASE_URL).replace(/\/$/, '')
+    this.baseUrl = (options.baseUrl ?? getBaseUrl()).replace(/\/$/, '')
     this.timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS
   }
 
@@ -86,14 +84,19 @@ export class MurielClient {
 
     if (res.ok) return data as T
 
-    const detail =
-      typeof data === 'object' && data !== null && 'detail' in data
-        ? String((data as Record<string, unknown>).detail)
+    // FastAPI puts the reason in `detail`: a string, or for 402 an object
+    // with a `message`.
+    const raw = typeof data === 'object' && data !== null && 'detail' in data
+      ? (data as Record<string, unknown>).detail : undefined
+    const detail = typeof raw === 'string' ? raw
+      : raw && typeof raw === 'object' && 'message' in raw
+        ? String((raw as Record<string, unknown>).message)
         : `HTTP ${res.status}`
 
     switch (res.status) {
       case 401: throw new MurielAuthenticationError(detail, res.status, data)
       case 400: throw new MurielValidationError(detail, res.status, data)
+      case 402: throw new MurielCreditsError(detail, res.status, data)
       case 404: throw new MurielNotFoundError(detail, res.status, data)
       case 429: throw new MurielRateLimitError(detail, res.status, data)
     }

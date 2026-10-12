@@ -64,7 +64,12 @@ export interface AgentQueryResponse {
   results: WaterQualityRecord[]
   count: number
   summary: string
-  executionLog: string[]
+  /** Each tool the agent ran, with its input. */
+  executionLog: Array<{ tool: string; input?: Record<string, unknown> }>
+  /** Present when a CSV or PDF was produced. */
+  documents?: Array<{ filename: string; url: string; rows?: number }>
+  /** What the question cost and the balance afterwards. */
+  credits?: { charged: number; balance: number }
   warning?: string
 }
 

@@ -27,6 +27,7 @@ export {
   MurielNotFoundError,
   MurielRateLimitError,
   MurielServerError,
+  MurielCreditsError,
 } from './errors.js'
 
 export { ANALYTE_GROUPS } from './config.js'

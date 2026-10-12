@@ -1,7 +1,7 @@
 # muriel &nbsp;·&nbsp; JavaScript / TypeScript SDK
 
 Official Node.js SDK for the [Muriel® Water Quality API](https://murielai.io).  
-Query 40M+ US drinking water records in plain English — or with typed filters.
+Ask about 88M+ U.S. drinking water results in plain English — the agent first, typed filters when you need them.
 
 ## Install
 
@@ -11,19 +11,25 @@ npm install muriel
 
 ## Quick start
 
+Get an API key at https://murielai.io/account.
+
 ```ts
-import { Agent } from 'muriel'
+import { query } from 'muriel'
 
-const agent = new Agent({ apiKey: 'muriel_live_...' })
+const answer = await query('Show me the latest lead samples in Illinois')
+console.log(answer.summary)       // the agent's answer
+console.log(answer.results[0])    // the records it rests on
 
-const response = await agent.query(
-  'PFAS detections in Illinois above EPA advisory levels'
-)
-
-console.log(response.summary)
-console.log(response.count, 'records')
-console.log(response.results[0])
+// Scope it and shape it
+const latest = await query('What was the most recent lead result for Chicago Water?', {
+  pwsid: 'IL0316000',
+  schema: ['sample_date', 'result', 'units', 'above_action_level'],
+})
 ```
+
+Agent queries are charged in credits to the key's account (`MurielCreditsError` when it is
+out). `getResults` and `getSystems` are free and rate-limited; `getViolations` and
+`getRequirements` return HTTP 501 until that data is in the store.
 
 Set `MURIEL_API_KEY` in your environment instead of passing `apiKey` directly:
 

@@ -28,6 +28,6 @@ export async function getSystems(options: GetSystemsOptions): Promise<WaterSyste
     ...(status && { system_statu: status }),
   }
 
-  const data = await client.get(`/api/v1/systems/state/${state.toUpperCase()}`, params)
+  const data = await client.get(`/api/v1/systems/${state.toUpperCase()}`, params)
   return extractSystems(data)
 }

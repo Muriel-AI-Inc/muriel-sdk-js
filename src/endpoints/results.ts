@@ -31,6 +31,8 @@ export interface GetResultsOptions extends ClientOptions {
   limit?: number
   /** Pagination offset */
   offset?: number
+  /** 'all' includes the historical archive; 'recent' is the current window. Default depends on the route. */
+  era?: 'all' | 'recent'
 }
 
 function extractRecords(data: unknown): WaterQualityRecord[] {
@@ -46,7 +48,7 @@ export async function getResults(options: GetResultsOptions): Promise<WaterQuali
   const {
     pwsid, address, radiusMiles = 10, state, analyte, analyteGroup,
     startDate, endDate, detectionsOnly, minConcentration,
-    geocodedOnly, presenceIndicator, limit = 100, offset = 0,
+    geocodedOnly, presenceIndicator, limit = 100, offset = 0, era,
     apiKey, baseUrl, timeoutMs,
   } = options
 
@@ -62,6 +64,7 @@ export async function getResults(options: GetResultsOptions): Promise<WaterQuali
     ...(minConcentration !== undefined && { min_concentration: minConcentration }),
     ...(geocodedOnly && { geocoded_only: true }),
     ...(presenceIndicator && { presence_indicator: presenceIndicator }),
+    ...(era && { era }),
   }
 
   let endpoint: string

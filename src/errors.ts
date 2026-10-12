@@ -38,6 +38,14 @@ export class MurielRateLimitError extends MurielAPIError {
   }
 }
 
+/** The key's account has no credits left for an agent query (HTTP 402). */
+export class MurielCreditsError extends MurielAPIError {
+  constructor(message = 'Out of credits. Email info@murielai.io to add more.', statusCode?: number, response?: unknown) {
+    super(message, statusCode, response)
+    this.name = 'MurielCreditsError'
+  }
+}
+
 export class MurielServerError extends MurielAPIError {
   constructor(message = 'Server error', statusCode?: number, response?: unknown) {
     super(message, statusCode, response)

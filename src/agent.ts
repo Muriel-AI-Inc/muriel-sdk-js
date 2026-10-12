@@ -80,7 +80,9 @@ interface AgentQueryRawResponse {
   results: unknown[]
   count: number
   summary: string
-  execution_log: string[]
+  execution_log: Array<{ tool: string; input?: Record<string, unknown> }>
+  documents?: Array<{ filename: string; url: string; rows?: number }>
+  credits?: { charged: number; balance: number }
   warning?: string
 }
 
@@ -168,6 +170,8 @@ export class Agent {
       count: data.count,
       summary: data.summary,
       executionLog: data.execution_log ?? [],
+      documents: data.documents,
+      credits: data.credits,
       warning: data.warning,
     }
   }
