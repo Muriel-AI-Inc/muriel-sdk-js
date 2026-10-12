@@ -32,7 +32,7 @@ an agent question is metered like a question in the app (typically 1-3 credits, 
 than 8), and `getResults` and `getSystems` cost 1 credit per 1,000 records returned, added
 up across calls. Every account gets 8 free credits a month. Out of credits throws
 `MurielCreditsError` before anything runs. `getViolations` and `getRequirements` return
-HTTP 501 until that data is in the store.
+HTTP 501: that data is not available yet.
 
 Set `MURIEL_API_KEY` in your environment instead of passing `apiKey` directly:
 
