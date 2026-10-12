@@ -27,9 +27,12 @@ const latest = await query('What was the most recent lead result for Chicago Wat
 })
 ```
 
-Agent queries are charged in credits to the key's account (`MurielCreditsError` when it is
-out). `getResults` and `getSystems` are free and rate-limited; `getViolations` and
-`getRequirements` return HTTP 501 until that data is in the store.
+One price list covers the app, this SDK and the MCP connector, from one balance of credits:
+an agent question is metered like a question in the app (typically 1-3 credits, never more
+than 8), and `getResults` and `getSystems` cost 1 credit per 1,000 records returned, added
+up across calls. Every account gets 8 free credits a month. Out of credits throws
+`MurielCreditsError` before anything runs. `getViolations` and `getRequirements` return
+HTTP 501 until that data is in the store.
 
 Set `MURIEL_API_KEY` in your environment instead of passing `apiKey` directly:
 
