@@ -185,7 +185,7 @@ const agents = new Map<string, Agent>()
  * One call, no setup: `query()` builds (and reuses) an Agent for you.
  *
  * @example
- * import { query } from 'muriel'
+ * import { query } from '@muriel-ai/sdk'
  *
  * const event = await query('Get the latest events for Chicago Water', {
  *   apiKey: 'YOUR_MURIEL_API_KEY',

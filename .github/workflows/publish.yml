@@ -2,7 +2,7 @@
 #
 # Uses npm Trusted Publishing: no npm token is stored anywhere, and the package
 # gets a provenance statement linking it to this workflow run. One-time setup
-# on npmjs.com -> the `muriel` package -> Settings -> Trusted Publisher ->
+# on npmjs.com -> the `@muriel-ai/sdk` package -> Settings -> Trusted Publisher ->
 # GitHub Actions: organization Muriel-AI-Inc, repository muriel-sdk-js,
 # workflow publish.yml, environment npm. npm only offers this once the
 # package exists, so the very first version is published by hand with
@@ -54,8 +54,9 @@ jobs:
         id: seen
         run: |
           v=$(node -p "require('./package.json').version")
-          if npm view "muriel@$v" version >/dev/null 2>&1; then
-            echo "muriel@$v is already published; nothing to do."; echo "skip=1" >> "$GITHUB_OUTPUT"
+          name=$(node -p "require('./package.json').name")
+          if npm view "$name@$v" version >/dev/null 2>&1; then
+            echo "$name@$v is already published; nothing to do."; echo "skip=1" >> "$GITHUB_OUTPUT"
           fi
       - if: steps.seen.outputs.skip != '1'
         run: npm ci

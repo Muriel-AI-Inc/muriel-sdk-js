@@ -86,7 +86,7 @@ Install the package and set your key. Create a key on your
 [account page](https://murielai.io/account).
 
 ```bash
-npm install muriel
+npm install @muriel-ai/sdk
 export MURIEL_API_KEY="muriel_live_..."
 ```
 
@@ -95,7 +95,7 @@ Works in Node 18+, Deno and Bun, with TypeScript types included. Keep the key
 on a server: never ship it in browser code.
 
 ```ts
-import { query } from 'muriel'
+import { query } from '@muriel-ai/sdk'
 
 const answer = await query("Is Chicago's water meeting federal limits for lead and copper?")
 
@@ -170,7 +170,7 @@ When you know exactly what you want, such as one system's full history or one
 contaminant across the country, query the data directly. Same key as above.
 
 ```ts
-import { getResults, getLead, getSystems } from 'muriel'
+import { getResults, getLead, getSystems } from '@muriel-ai/sdk'
 
 // One water system, history included
 const rows = await getResults({ pwsid: 'IL0316000', analyte: 'Lead', limit: 100 })
@@ -233,7 +233,7 @@ email [info@murielai.io](mailto:info@murielai.io).
 ## Errors
 
 ```ts
-import { getResults, MurielAPIError, MurielCreditsError } from 'muriel'
+import { getResults, MurielAPIError, MurielCreditsError } from '@muriel-ai/sdk'
 
 try {
   const rows = await getResults({ pwsid: 'IL0316000' })
