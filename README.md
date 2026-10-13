@@ -113,7 +113,8 @@ tells you when a state's data is out of date. Each answer carries:
 
 | Field | What it holds |
 |---|---|
-| `summary` | The answer in plain English |
+| `summary` | The answer in plain English, as plain text |
+| `summaryMarkdown` | The same answer with its Markdown formatting, as the web app shows it |
 | `results`, `count` | The records the answer rests on. Sample results use the same fields as the REST API's records; other rows, such as events or rankings, have their own |
 | `documents` | Any CSV or PDF the agent produced, with a download URL |
 | `warning` | A caveat, when the data needs one |
