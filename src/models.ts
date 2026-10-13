@@ -78,7 +78,10 @@ export interface AgentQueryResponse {
    */
   results: Array<WaterQualityRecord | Record<string, unknown>>
   count: number
+  /** The agent's answer, as plain text. */
   summary: string
+  /** The same answer with its Markdown formatting, as the web app shows it. */
+  summaryMarkdown?: string
   /** Each tool the agent ran, with its input. */
   executionLog: Array<{ tool: string; input?: Record<string, unknown> }>
   /** Present when a CSV or PDF was produced. */

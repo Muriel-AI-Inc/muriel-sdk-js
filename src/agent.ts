@@ -81,6 +81,7 @@ interface AgentQueryRawResponse {
   results: unknown[]
   count: number
   summary: string
+  summary_markdown?: string
   execution_log: Array<{ tool: string; input?: Record<string, unknown> }>
   documents?: Array<{ filename: string; url: string; rows?: number }>
   credits?: { charged: number; balance: number }
@@ -170,6 +171,7 @@ export class Agent {
       results: data.results as AgentQueryResponse['results'],
       count: data.count,
       summary: data.summary,
+      summaryMarkdown: data.summary_markdown,
       executionLog: data.execution_log ?? [],
       documents: data.documents,
       credits: data.credits,
