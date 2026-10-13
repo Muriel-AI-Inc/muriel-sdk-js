@@ -1,4 +1,5 @@
 import { MurielClient } from './client.js'
+import { AGENT_TIMEOUT_MS } from './config.js'
 import { MurielAPIError, MurielValidationError } from './errors.js'
 import type { AgentQueryResponse } from './models.js'
 
@@ -7,7 +8,7 @@ export interface AgentOptions {
   apiKey?: string
   /** API base URL. Defaults to https://api.murielai.io */
   baseUrl?: string
-  /** Request timeout in milliseconds. Default: 30000 */
+  /** Request timeout in milliseconds. Default: 120000 (the server answers within about 100 s). */
   timeoutMs?: number
   /** Max records to return. Default: 1000 */
   maxRecords?: number
@@ -94,7 +95,7 @@ export class Agent {
     this.client = new MurielClient({
       apiKey: options.apiKey,
       baseUrl: options.baseUrl,
-      timeoutMs: options.timeoutMs,
+      timeoutMs: options.timeoutMs ?? AGENT_TIMEOUT_MS,
     })
     this.maxRecords = options.maxRecords ?? 1000
   }

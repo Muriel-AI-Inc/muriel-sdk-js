@@ -71,7 +71,7 @@ export class MurielClient {
       })
     } catch (err: unknown) {
       if (err instanceof Error && err.name === 'AbortError') {
-        throw new MurielAPIError(`Request timed out after ${this.timeoutMs}ms`)
+        throw new MurielAPIError(`No answer within ${this.timeoutMs / 1000}s. Try again, raise timeoutMs, or ask a narrower question.`)
       }
       throw new MurielAPIError(`Network error: ${String(err)}`)
     } finally {
@@ -113,6 +113,10 @@ export class MurielClient {
       case 402: throw new MurielCreditsError(detail || undefined, res.status, data)
       case 404: throw new MurielNotFoundError(msg, res.status, data)
       case 429: throw new MurielRateLimitError(msg, res.status, data)
+    }
+    if (res.status === 504 || res.status === 524) {
+      throw new MurielServerError('The request took longer than one API call allows. Ask a narrower ' +
+        'question (one system, one contaminant or a date range) and retry.', res.status, data)
     }
     if (res.status >= 500) throw new MurielServerError(msg, res.status, data)
     throw new MurielAPIError(msg, res.status, data)

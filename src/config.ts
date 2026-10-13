@@ -2,6 +2,8 @@ import { MurielAPIError } from './errors.js'
 
 export const DEFAULT_BASE_URL = 'https://api.murielai.io'
 export const DEFAULT_TIMEOUT_MS = 30_000
+/** An agent question typically takes 10-60 seconds; the server answers within about 100. */
+export const AGENT_TIMEOUT_MS = 120_000
 
 export const ANALYTE_GROUPS = [
   'pfas', 'microbial', 'dbps', 'radiological', 'pesticides_herbicides',
