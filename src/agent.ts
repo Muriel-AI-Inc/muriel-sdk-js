@@ -157,7 +157,17 @@ export class Agent {
 
     if (payload.schema) {
       // The API has already shaped the results; take the first shaped object.
-      const first = (Array.isArray(data.results) ? data.results[0] : data.results) ?? {}
+      let first = (Array.isArray(data.results) ? data.results[0] : data.results) ?? {}
+      // Undo a wrapper round the shaped answer ({"$parameter": {...}}): one key
+      // that is not a field of the schema, holding an object.
+      const props = (payload.schema.properties ?? {}) as Record<string, unknown>
+      if (first && typeof first === 'object' && !Array.isArray(first)) {
+        const keys = Object.keys(first)
+        const inner = (first as Record<string, unknown>)[keys[0]]
+        if (keys.length === 1 && !(keys[0] in props) && inner && typeof inner === 'object' && !Array.isArray(inner)) {
+          first = inner
+        }
+      }
       const obj = first as Record<string, unknown>
       if (!fields) return { ...obj }
       const missing = fields.filter((f) => !(f in obj))

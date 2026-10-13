@@ -62,4 +62,10 @@ await t('empty prompt rejected', async () => {
   await assert.rejects(query('  ', { apiKey: 'k' }), MurielValidationError)
 })
 
+await t('a wrapped shaped answer is unwrapped', async () => {
+  body = { results: [{ $parameter: { pwsid: 'IL0316000', insight: 'x' } }], count: 1, summary: '' }
+  const r = await query('x', { apiKey: 'k', schema: ['pwsid', 'insight'] })
+  assert.deepEqual(r, { pwsid: 'IL0316000', insight: 'x' })
+})
+
 console.log(`${n} passed`)
