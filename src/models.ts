@@ -111,6 +111,13 @@ export interface SystemsResponse {
   records?: WaterSystem[]
   systems?: WaterSystem[]
   count?: number
+  /** Systems in this page. */
+  system_count?: number
+  /** Systems the state has in all. */
+  total_systems?: number
+  offset?: number
+  /** Whether another page follows. */
+  has_more?: boolean
   [key: string]: unknown
 }
 

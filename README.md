@@ -183,7 +183,8 @@ const pfas = await getResults({ state: 'IL', analyteGroup: 'pfas', limit: 500 })
 const lead = await getLead({ limit: 50, detectionsOnly: true })
 
 // Every water system in a state, with size and latest sample
-const systems = await getSystems({ state: 'IL' })
+// (limit: null pages through them all)
+const systems = await getSystems({ state: 'IL', limit: null })
 ```
 
 The same calls work from any language over HTTP:
@@ -204,7 +205,7 @@ current results.
 |---|---|
 | `getResults()` | Results by system, state, analyte group or address, with filters for dates, detections, concentration and analyte |
 | `getLatest()`, `getLead()`, `getPfas()`, `getColiform()`, `getNitrate()`, `getDbps()`, `getArsenic()`, `getManganese()`, `getVocs()` | The latest results for one contaminant, nationwide |
-| `getSystems()` | Water systems in a state |
+| `getSystems()` | Water systems in a state; `limit: null` for all of them, or page with `offset` |
 | `getStateSamplingPoints()`, `getSamplingPointGeocoding()` | Sampling points with a location |
 | `getStateFacilities()`, `getFacilityGeocoding()` | Facilities with a location, where states publish them |
 | `MurielClient` | `get()` and `post()` on any route, with the key, timeouts and errors handled |

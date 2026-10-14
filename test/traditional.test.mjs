@@ -84,6 +84,24 @@ await t('systems and facilities', async () => {
   assert.equal(f.note, 'none')
 })
 
+await t('getSystems limit: null pages through the whole state', async () => {
+  const total = 25003
+  const before = sent.length
+  next = () => {
+    const u = new URL(last().url)
+    const lo = Number(u.searchParams.get('offset')), n = Number(u.searchParams.get('limit'))
+    const recs = Array.from({ length: Math.max(0, Math.min(n, total - lo)) }, (_, i) => ({ pwsid: `IL${lo + i}` }))
+    return json(200, { records: recs, total_systems: total, has_more: lo + recs.length < total })
+  }
+  const all = await getSystems({ state: 'IL', limit: null, apiKey: KEY })
+  assert.equal(all.length, total)
+  assert.equal(new Set(all.map(s => s.pwsid)).size, total)
+  assert.deepEqual(sent.slice(before).map(s => new URL(s.url).searchParams.get('offset')), ['0', '20000'])
+  const page = await getSystems({ state: 'IL', limit: 5, offset: 10, apiKey: KEY })
+  assert.equal(new URL(last().url).searchParams.get('offset'), '10')
+  assert.equal(page[0].pwsid, 'IL10')
+})
+
 await t('every error status throws its own error, with the server message', async () => {
   const cases = [[400, MurielValidationError], [401, MurielAuthenticationError],
     [404, MurielNotFoundError], [422, MurielValidationError], [429, MurielRateLimitError],
