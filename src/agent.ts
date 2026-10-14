@@ -119,9 +119,10 @@ export class Agent {
    * })
    */
   async query(prompt: string): Promise<AgentQueryResponse>
+  async query(prompt: string, options: QueryOptions & { schema: { type: 'array' } & Record<string, unknown> }): Promise<Record<string, unknown>[]>
   async query(prompt: string, options: QueryOptions & { schema: string[] | Record<string, unknown> }): Promise<Record<string, unknown>>
-  async query(prompt: string, options?: QueryOptions): Promise<AgentQueryResponse | Record<string, unknown>>
-  async query(prompt: string, options: QueryOptions = {}): Promise<AgentQueryResponse | Record<string, unknown>> {
+  async query(prompt: string, options?: QueryOptions): Promise<AgentQueryResponse | Record<string, unknown> | Record<string, unknown>[]>
+  async query(prompt: string, options: QueryOptions = {}): Promise<AgentQueryResponse | Record<string, unknown> | Record<string, unknown>[]> {
     if (typeof prompt !== 'string' || !prompt.trim()) {
       throw new MurielValidationError('prompt must be a non-empty string.')
     }
@@ -168,6 +169,8 @@ export class Agent {
           first = inner
         }
       }
+      // An array schema ({ type: 'array', items: ... }) answers with a list.
+      if (Array.isArray(first)) return first as Record<string, unknown>[]
       const obj = first as Record<string, unknown>
       if (!fields) return { ...obj }
       const missing = fields.filter((f) => !(f in obj))
@@ -206,9 +209,10 @@ const agents = new Map<string, Agent>()
  * })
  */
 export function query(prompt: string): Promise<AgentQueryResponse>
+export function query(prompt: string, options: QueryCallOptions & { schema: { type: 'array' } & Record<string, unknown> }): Promise<Record<string, unknown>[]>
 export function query(prompt: string, options: QueryCallOptions & { schema: string[] | Record<string, unknown> }): Promise<Record<string, unknown>>
-export function query(prompt: string, options?: QueryCallOptions): Promise<AgentQueryResponse | Record<string, unknown>>
-export function query(prompt: string, options: QueryCallOptions = {}): Promise<AgentQueryResponse | Record<string, unknown>> {
+export function query(prompt: string, options?: QueryCallOptions): Promise<AgentQueryResponse | Record<string, unknown> | Record<string, unknown>[]>
+export function query(prompt: string, options: QueryCallOptions = {}): Promise<AgentQueryResponse | Record<string, unknown> | Record<string, unknown>[]> {
   const { apiKey, baseUrl, ...rest } = options
   const key = `${apiKey ?? ''}\u0000${baseUrl ?? ''}`
   let agent = agents.get(key)

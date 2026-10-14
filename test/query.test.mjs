@@ -68,4 +68,12 @@ await t('a wrapped shaped answer is unwrapped', async () => {
   assert.deepEqual(r, { pwsid: 'IL0316000', insight: 'x' })
 })
 
+await t('an array schema answers with a list', async () => {
+  const rows = [{ pwsid: 'TX1010001', analyte: 'Nitrate' }, { pwsid: 'TX2200012', analyte: 'Arsenic' }]
+  body = { results: [rows], count: 1, summary: '' }
+  const r = await query('x', { apiKey: 'k', schema: { type: 'array', items: { type: 'object' } } })
+  assert.ok(Array.isArray(r))
+  assert.deepEqual(r, rows)
+})
+
 console.log(`${n} passed`)
