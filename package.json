@@ -1,6 +1,6 @@
 {
   "name": "@muriel-ai/sdk",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "description": "Muriel: the AI agent for U.S. drinking water data. Ask about any public water system in plain English, or query the sample results directly.",
   "keywords": [
     "drinking water",

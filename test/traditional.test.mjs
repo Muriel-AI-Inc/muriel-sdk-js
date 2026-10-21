@@ -184,4 +184,64 @@ await t('the ESM build loads too', async () => {
   assert.equal(typeof esm.getResults, 'function')
 })
 
+// ---- limit: null and limits over 1,000 page for you ----------------------
+
+// A fake server holding `total` records that pages like the API.
+function paged(total, cap) {
+  return () => {
+    const u = new URL(last().url)
+    const off = Number(u.searchParams.get('offset') ?? 0), lim = Number(u.searchParams.get('limit'))
+    assert.ok(lim <= 1000, 'the API rejects a limit over 1,000')
+    const k = Math.max(0, Math.min(lim, total - off))
+    const more = off + k < total
+    const capped = cap !== undefined && more && off + lim >= cap
+    return json(200, { records: Array.from({ length: k }, (_, i) => ({ i: off + i })),
+                       pagination: { has_more: more && !capped, offset_limit_reached: capped,
+                                     max_offset: cap ?? 1_000_000 } })
+  }
+}
+const pages = () => sent.map((s) => { const u = new URL(s.url)
+  return [Number(u.searchParams.get('offset') ?? 0), Number(u.searchParams.get('limit'))] })
+
+await t('limit: null returns a whole system', async () => {
+  sent = []; next = paged(2_500)
+  const rows = await getResults({ pwsid: 'IL0316000', limit: null, apiKey: KEY })
+  assert.equal(rows.length, 2_500)
+  assert.deepEqual(rows.map((r) => r.i), [...Array(2_500).keys()])
+  assert.deepEqual(pages(), [[0, 1000], [1000, 1000], [2000, 1000]])
+})
+
+await t('limit left out is still the default (100)', async () => {
+  sent = []; next = paged(2_500)
+  const rows = await getResults({ pwsid: 'IL0316000', apiKey: KEY })
+  assert.equal(rows.length, 100); assert.equal(sent.length, 1)
+})
+
+await t('a limit over 1,000 is fetched in pages and stops there', async () => {
+  sent = []; next = paged(5_000)
+  const rows = await getResults({ pwsid: 'IL0316000', limit: 2_500, apiKey: KEY })
+  assert.equal(rows.length, 2_500)
+  assert.deepEqual(pages(), [[0, 1000], [1000, 1000], [2000, 500]])
+})
+
+await t('paging starts from the offset given', async () => {
+  sent = []; next = paged(2_500)
+  const rows = await getResults({ pwsid: 'IL0316000', limit: null, offset: 1_500, apiKey: KEY })
+  assert.equal(rows.length, 1_000); assert.equal(rows[0].i, 1_500)
+})
+
+await t('a state query stops at the offset cap and says so', async () => {
+  sent = []; next = paged(50_000, 3_000)
+  const warned = []; const warn = console.warn; console.warn = (m) => warned.push(String(m))
+  try {
+    const rows = await getResults({ state: 'IL', analyte: 'Lead', limit: null, apiKey: KEY })
+    assert.equal(rows.length, 3_000)
+  } finally { console.warn = warn }
+  assert.match(warned.join(' '), /Stopped at 3,000 records/)
+})
+
+await t('limit 0 is refused', async () => {
+  await assert.rejects(getResults({ pwsid: 'IL0316000', limit: 0, apiKey: KEY }), MurielValidationError)
+})
+
 console.log(`${n} passed`)

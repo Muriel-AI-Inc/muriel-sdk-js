@@ -28,13 +28,22 @@ export interface GetResultsOptions extends ClientOptions {
   geocodedOnly?: boolean
   /** Microbial: 'P' = present, 'A' = absent */
   presenceIndicator?: 'P' | 'A'
-  /** Number of records (default 100, max 1,000 per call) */
-  limit?: number
+  /**
+   * Number of records (default 100). `null` returns every matching record, and a
+   * limit over 1,000 is fetched in pages of 1,000: the SDK pages for you. One
+   * system (pwsid) pages through its whole record; a state, group or address
+   * query stops at the API's 10,000-record offset limit with a console warning.
+   * Billed like any pull: 1 credit per 1,000 records.
+   */
+  limit?: number | null
   /** Pagination offset */
   offset?: number
   /** 'all' includes the historical archive; 'recent' is the current window. Default depends on the route. */
   era?: 'all' | 'recent'
 }
+
+// The API returns at most this many records per request; larger requests page.
+const PAGE_SIZE = 1000
 
 function extractRecords(data: unknown): WaterQualityRecord[] {
   if (Array.isArray(data)) return data as WaterQualityRecord[]
@@ -62,8 +71,6 @@ export async function getResults(options: GetResultsOptions): Promise<WaterQuali
   const client = new MurielClient({ apiKey, baseUrl, timeoutMs })
 
   const params: QueryParams = {
-    limit,
-    ...(offset && { offset }),
     ...(analyte && { result_analyte_name: analyte }),
     ...(startDate && { start_date: startDate }),
     ...(endDate && { end_date: endDate }),
@@ -94,6 +101,34 @@ export async function getResults(options: GetResultsOptions): Promise<WaterQuali
     throw new MurielValidationError('Give at least one of: pwsid, address, state, or analyteGroup.')
   }
 
-  const data = await client.get(endpoint, params)
-  return extractRecords(data)
+  if (limit !== null && !(limit >= 1)) {
+    throw new MurielValidationError('limit must be at least 1, or null for every record.')
+  }
+  if (limit !== null && limit <= PAGE_SIZE) {
+    const data = await client.get(endpoint, { ...params, limit, ...(offset && { offset }) })
+    return extractRecords(data)
+  }
+
+  // limit null (everything) or over one page: fetch PAGE_SIZE at a time.
+  const out: WaterQualityRecord[] = []
+  let at = offset
+  while (limit === null || out.length < limit) {
+    const size = limit === null ? PAGE_SIZE : Math.min(PAGE_SIZE, limit - out.length)
+    const data = await client.get(endpoint, { ...params, limit: size, offset: at })
+    const page = extractRecords(data)
+    out.push(...page)
+    at += page.length
+    const pag = (data && typeof data === 'object' && !Array.isArray(data)
+      ? (data as { pagination?: { has_more?: boolean, offset_limit_reached?: boolean, max_offset?: number } }).pagination
+      : undefined) ?? {}
+    if (pag.offset_limit_reached) {
+      console.warn(`Stopped at ${out.length.toLocaleString('en-US')} records: the API pages state, ` +
+        `analyte-group and address queries up to an offset of ${(pag.max_offset ?? 10_000).toLocaleString('en-US')}. ` +
+        'Narrow the query (startDate/endDate, analyte) or ask for one system with pwsid, ' +
+        'which pages through its whole record.')
+      break
+    }
+    if (!page.length || !(pag.has_more ?? page.length >= size)) break
+  }
+  return out
 }
