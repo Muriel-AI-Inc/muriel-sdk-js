@@ -1,10 +1,17 @@
 import { MurielClient, type ClientOptions, type QueryParams } from '../client.js'
 import type { WaterQualityRecord, RecordsResponse } from '../models.js'
+import { MurielValidationError } from '../errors.js'
+import { fetchPages } from '../paging.js'
 
 /** Options for the national contaminant feeds (getLead, getPfas, ...). */
 export interface FeedOptions extends ClientOptions {
-  /** Records to return (default 100, max 1,000). */
-  limit?: number
+  /**
+   * Maximum records to return. Left out, or null: EVERY matching record,
+   * fetched 1,000 at a time (1 credit per 1,000 records). Nationwide feeds can
+   * be large: narrow them (era, detectionsOnly, minConcentration, geocodedOnly)
+   * or pass a limit. getLatest is the exception: its default is 100, max 1,000.
+   */
+  limit?: number | null
   /** 'recent' (newest first, the default) or 'oldest'. */
   sort?: 'recent' | 'oldest'
   /** Only results above zero and not reported as non-detects. */
@@ -26,12 +33,14 @@ export interface FeedOptions extends ClientOptions {
 function feed(path: string) {
   return async function (options: FeedOptions = {}): Promise<WaterQualityRecord[]> {
     const {
-      limit = 100, sort, detectionsOnly, minConcentration, excludeCensored,
+      limit = null, sort, detectionsOnly, minConcentration, excludeCensored,
       geocodedOnly, analyte, presenceIndicator, era, apiKey, baseUrl, timeoutMs,
     } = options
     const client = new MurielClient({ apiKey, baseUrl, timeoutMs })
+    if (limit !== null && !(limit >= 1)) {
+      throw new MurielValidationError('limit must be at least 1, or null for every record.')
+    }
     const params: QueryParams = {
-      limit,
       ...(sort && { sort }),
       ...(detectionsOnly && { detections_only: true }),
       ...(minConcentration !== undefined && { min_concentration: minConcentration }),
@@ -41,13 +50,20 @@ function feed(path: string) {
       ...(presenceIndicator && { presence_indicator: presenceIndicator }),
       ...(era && { era }),
     }
-    const data = await client.get<RecordsResponse>(`/api/v1/records/${path}`, params)
-    return (data.records ?? []) as WaterQualityRecord[]
+    return fetchPages(client, `/api/v1/records/${path}`, params, limit)
   }
 }
 
-/** The most recent results nationwide, any contaminant. */
-export const getLatest = feed('latest')
+/** The most recent results nationwide, any contaminant: the newest `limit` (default 100, max 1,000). */
+export async function getLatest(
+  options: Pick<FeedOptions, 'apiKey' | 'baseUrl' | 'timeoutMs'> & { limit?: number } = {},
+): Promise<WaterQualityRecord[]> {
+  const { limit = 100, apiKey, baseUrl, timeoutMs } = options
+  const client = new MurielClient({ apiKey, baseUrl, timeoutMs })
+  const data = await client.get<RecordsResponse>('/api/v1/records/latest', { limit })
+  return (data.records ?? []) as WaterQualityRecord[]
+}
+
 /** Lead results nationwide. */
 export const getLead = feed('lead')
 /** PFAS results nationwide (PFOA, PFOS and the rest). */

@@ -244,4 +244,79 @@ await t('limit 0 is refused', async () => {
   await assert.rejects(getResults({ pwsid: 'IL0316000', limit: 0, apiKey: KEY }), MurielValidationError)
 })
 
+// ---- contaminant feeds: every record by default, through the API's cursor ----
+function cursorFeed(total, failOnceAt = null) {
+  let failed = false
+  return () => {
+    const u = new URL(last().url)
+    const at = Number(u.searchParams.get('cursor') ?? 0), lim = Number(u.searchParams.get('limit'))
+    assert.ok(lim <= 1000, 'the API rejects a limit over 1,000')
+    if (failOnceAt !== null && at === failOnceAt && !failed) {
+      failed = true
+      return json(429, { detail: 'Rate limit: 60 requests a minute per key.' })
+    }
+    const k = Math.max(0, Math.min(lim, total - at)), more = at + k < total
+    return json(200, { records: Array.from({ length: k }, (_, j) => ({ i: at + j })),
+      pagination: { has_more: more, next_cursor: more ? String(at + k) : null } })
+  }
+}
+const cursors = () => sent.map(s => new URL(s.url).searchParams.get('cursor'))
+
+await t('a feed returns every record when no limit is given', async () => {
+  sent = []; next = cursorFeed(2_500)
+  const rows = await getLead({ apiKey: KEY })
+  assert.deepEqual(rows.map(r => r.i), Array.from({ length: 2_500 }, (_, i) => i))
+  assert.deepEqual(cursors(), [null, '1000', '2000'])
+  assert.ok(sent.every(s => new URL(s.url).pathname === '/api/v1/records/lead'))
+})
+
+await t('a feed with limit: null is the same', async () => {
+  sent = []; next = cursorFeed(1_200)
+  const rows = await getLead({ limit: null, apiKey: KEY })
+  assert.equal(rows.length, 1_200); assert.equal(sent.length, 2)
+})
+
+await t('a feed limit stops there, and filters go on every page', async () => {
+  sent = []; next = cursorFeed(5_000)
+  const rows = await getLead({ limit: 1_500, minConcentration: 0.015, apiKey: KEY })
+  assert.equal(rows.length, 1_500)
+  assert.deepEqual(sent.map(s => [new URL(s.url).searchParams.get('cursor'), new URL(s.url).searchParams.get('limit')]),
+    [[null, '1000'], ['1000', '500']])
+  assert.ok(sent.every(s => new URL(s.url).searchParams.get('min_concentration') === '0.015'))
+})
+
+await t('a rate-limited page is retried, not lost', async () => {
+  sent = []; next = cursorFeed(2_500, 1000)
+  const st = globalThis.setTimeout
+  globalThis.setTimeout = (fn) => st(fn, 0)
+  try {
+    const rows = await sdk.getPfas({ apiKey: KEY })
+    assert.equal(rows.length, 2_500); assert.equal(sent.length, 4)
+  } finally { globalThis.setTimeout = st }
+})
+
+await t('an older server without a cursor gives one page, not a loop', async () => {
+  sent = []
+  next = () => json(200, { records: Array.from({ length: 1000 }, (_, i) => ({ i })), pagination: null })
+  const rows = await getLead({ apiKey: KEY })
+  assert.equal(rows.length, 1000); assert.equal(sent.length, 1)
+})
+
+await t('an analyte-group query follows the cursor', async () => {
+  sent = []; next = cursorFeed(2_100)
+  const rows = await getResults({ analyteGroup: 'pfas', limit: null, apiKey: KEY })
+  assert.equal(rows.length, 2_100)
+  assert.equal(new URL(last().url).pathname, '/api/v1/records/group/pfas')
+})
+
+await t('getLatest still returns the newest 100 by default', async () => {
+  sent = []; next = () => json(200, { records: [] })
+  await sdk.getLatest({ apiKey: KEY })
+  assert.equal(new URL(last().url).searchParams.get('limit'), '100'); assert.equal(sent.length, 1)
+})
+
+await t('a feed limit of 0 is refused', async () => {
+  await assert.rejects(getLead({ limit: 0, apiKey: KEY }), MurielValidationError)
+})
+
 console.log(`${n} passed`)

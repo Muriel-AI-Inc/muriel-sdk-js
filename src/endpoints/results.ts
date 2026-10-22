@@ -2,6 +2,7 @@ import { MurielClient, type ClientOptions, type QueryParams } from '../client.js
 import type { WaterQualityRecord, RecordsResponse } from '../models.js'
 import { ANALYTE_GROUPS, type AnalyteGroup } from '../config.js'
 import { MurielValidationError } from '../errors.js'
+import { PAGE_SIZE, extractRecords, fetchPages } from '../paging.js'
 
 export interface GetResultsOptions extends ClientOptions {
   /** Public Water System ID */
@@ -42,17 +43,6 @@ export interface GetResultsOptions extends ClientOptions {
   era?: 'all' | 'recent'
 }
 
-// The API returns at most this many records per request; larger requests page.
-const PAGE_SIZE = 1000
-
-function extractRecords(data: unknown): WaterQualityRecord[] {
-  if (Array.isArray(data)) return data as WaterQualityRecord[]
-  if (typeof data === 'object' && data !== null) {
-    const d = data as RecordsResponse
-    return (d.records ?? d.results ?? []) as WaterQualityRecord[]
-  }
-  return []
-}
 
 export async function getResults(options: GetResultsOptions): Promise<WaterQualityRecord[]> {
   const {
@@ -110,25 +100,5 @@ export async function getResults(options: GetResultsOptions): Promise<WaterQuali
   }
 
   // limit null (everything) or over one page: fetch PAGE_SIZE at a time.
-  const out: WaterQualityRecord[] = []
-  let at = offset
-  while (limit === null || out.length < limit) {
-    const size = limit === null ? PAGE_SIZE : Math.min(PAGE_SIZE, limit - out.length)
-    const data = await client.get(endpoint, { ...params, limit: size, offset: at })
-    const page = extractRecords(data)
-    out.push(...page)
-    at += page.length
-    const pag = (data && typeof data === 'object' && !Array.isArray(data)
-      ? (data as { pagination?: { has_more?: boolean, offset_limit_reached?: boolean, max_offset?: number } }).pagination
-      : undefined) ?? {}
-    if (pag.offset_limit_reached) {
-      console.warn(`Stopped at ${out.length.toLocaleString('en-US')} records: the API pages state, ` +
-        `analyte-group and address queries up to an offset of ${(pag.max_offset ?? 10_000).toLocaleString('en-US')}. ` +
-        'Narrow the query (startDate/endDate, analyte) or ask for one system with pwsid, ' +
-        'which pages through its whole record.')
-      break
-    }
-    if (!page.length || !(pag.has_more ?? page.length >= size)) break
-  }
-  return out
+  return fetchPages(client, endpoint, params, limit, offset)
 }
