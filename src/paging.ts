@@ -38,7 +38,9 @@ async function getWithRetry(client: MurielClient, endpoint: string, params: Quer
       return await client.get(endpoint, params)
     } catch (err) {
       if (!(err instanceof MurielRateLimitError) || attempt >= rateLimit.tries) throw err
-      await new Promise(r => setTimeout(r, rateLimit.waitMs))
+      const wait = err.retryAfter === undefined ? rateLimit.waitMs
+        : Math.min(err.retryAfter * 1000, rateLimit.waitMs * 3)
+      await new Promise(r => setTimeout(r, wait))
     }
   }
 }

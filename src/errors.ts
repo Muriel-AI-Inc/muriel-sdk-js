@@ -31,10 +31,15 @@ export class MurielNotFoundError extends MurielAPIError {
   }
 }
 
+/** HTTP 429: more than 60 requests in a minute on one key. */
 export class MurielRateLimitError extends MurielAPIError {
-  constructor(message = 'Rate limit exceeded', statusCode?: number, response?: unknown) {
+  /** Seconds to wait before retrying, from the Retry-After header (undefined if not sent). */
+  readonly retryAfter?: number
+
+  constructor(message = 'Rate limit exceeded', statusCode?: number, response?: unknown, retryAfter?: number) {
     super(message, statusCode, response)
     this.name = 'MurielRateLimitError'
+    this.retryAfter = retryAfter
   }
 }
 

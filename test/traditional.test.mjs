@@ -319,4 +319,13 @@ await t('a feed limit of 0 is refused', async () => {
   await assert.rejects(getLead({ limit: 0, apiKey: KEY }), MurielValidationError)
 })
 
+await t('a rate-limit error says how long to wait', async () => {
+  next = () => json(429, { detail: 'Rate limit: 60 requests a minute per key.' }, { 'retry-after': '20' })
+  await assert.rejects(getResults({ pwsid: 'IL0316000', apiKey: KEY }),
+    (e) => e instanceof MurielRateLimitError && e.retryAfter === 20 && e.statusCode === 429)
+  next = () => json(429, { detail: 'Rate limit.' })
+  await assert.rejects(getResults({ pwsid: 'IL0316000', apiKey: KEY }),
+    (e) => e instanceof MurielRateLimitError && e.retryAfter === undefined)
+})
+
 console.log(`${n} passed`)

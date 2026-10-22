@@ -112,7 +112,11 @@ export class MurielClient {
       case 400: case 422: throw new MurielValidationError(msg, res.status, data)
       case 402: throw new MurielCreditsError(detail || undefined, res.status, data)
       case 404: throw new MurielNotFoundError(msg, res.status, data)
-      case 429: throw new MurielRateLimitError(msg, res.status, data)
+      case 429: {
+        const header = res.headers.get('retry-after')
+        const ra = header === null || header.trim() === '' ? NaN : Number(header)
+        throw new MurielRateLimitError(msg, res.status, data, Number.isFinite(ra) && ra >= 0 ? ra : undefined)
+      }
     }
     if (res.status === 504 || res.status === 524) {
       throw new MurielServerError('The request took longer than one API call allows. Ask a narrower ' +
